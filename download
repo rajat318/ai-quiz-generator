@@ -1,0 +1,300 @@
+import React, { useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'motion/react';
+import { 
+  FileText, Upload, Settings2, Trash2, Sparkles, 
+  ChevronRight, Brain, Languages, Trophy, Clock,
+  FileCheck, AlertCircle, Loader2, Zap, RefreshCcw
+} from 'lucide-react';
+import toast from 'react-hot-toast';
+import axios from 'axios';
+import { generateAIQuiz } from '../lib/gemini';
+import { QuizConfig } from '../types';
+import { useLocalStorage } from '../hooks/useLocalStorage';
+
+export function Generator() {
+  const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'topic' | 'text'>('topic');
+  
+  const [config, setConfig] = useState<QuizConfig>({
+    subject: '',
+    topic: '',
+    count: 10,
+    difficulty: 'medium',
+    language: 'English',
+    examType: 'General',
+    timeLimit: 15,
+    typeRatio: { MCQ: 100 },
+    isCustomAmount: false
+  });
+
+  const [contextText, setContextText] = useState('');
+  const [fileName, setFileName] = useState('');
+  const [savedQuizzes, setSavedQuizzes] = useLocalStorage<any[]>('edu_quiz_sessions', []);
+
+  const handleGenerate = async () => {
+    if (activeTab === 'topic' && !config.topic) {
+      toast.error('Please enter a topic or subject');
+      return;
+    }
+    if (activeTab === 'text' && !contextText) {
+      toast.error('Please paste your notes');
+      return;
+    }
+
+    setLoading(true);
+    const toastId = toast.loading('Brewing your custom quiz with AI...');
+    
+    try {
+      const questions = await generateAIQuiz({
+        ...config,
+        topic: activeTab === 'topic' ? config.topic : 'Based on Context',
+        contextText: activeTab === 'text' ? contextText : undefined
+      });
+
+      const newQuiz = {
+        id: `quiz-${Date.now()}`,
+        config,
+        questions,
+        answers: {},
+        startTime: Date.now(),
+        score: 0,
+        status: 'pending'
+      };
+
+      setSavedQuizzes([newQuiz, ...savedQuizzes]);
+      toast.success('Quiz ready! Good luck.', { id: toastId });
+      navigate(`/quiz/${newQuiz.id}`);
+    } catch (error) {
+      toast.error('AI generation failed. Please try again or check your API key.', { id: toastId });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const counts = [5, 10, 20, 50, 100];
+
+  const presets = [
+    { name: 'Quick Practice', icon: <Zap size={14} />, desc: '10 Mixed MCQs' },
+    { name: 'Exam Mode', icon: <FileText size={14} />, desc: 'Strict timing & mixed' },
+    { name: 'Revision Mode', icon: <RefreshCcw size={14} />, desc: 'Conceptual questions' },
+    { name: 'Rapid Fire', icon: <Zap size={14} className="text-amber-400" />, desc: 'Short one-liners' },
+  ];
+
+  const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
+
+  const applyPreset = (presetName: string) => {
+    setSelectedPreset(presetName);
+    switch (presetName) {
+      case 'Quick Practice':
+        setConfig(prev => ({ ...prev, count: 10, difficulty: 'medium', examType: 'Practice' }));
+        break;
+      case 'Exam Mode':
+        setConfig(prev => ({ ...prev, count: 20, difficulty: 'hard', examType: 'Final Exam', timeLimit: 30 }));
+        break;
+      case 'Revision Mode':
+        setConfig(prev => ({ ...prev, count: 15, difficulty: 'easy', examType: 'Revision' }));
+        break;
+      case 'Rapid Fire':
+        setConfig(prev => ({ ...prev, count: 5, difficulty: 'easy', examType: 'Speed Drill', timeLimit: 5 }));
+        break;
+    }
+    toast.success(`${presetName} preset applied!`);
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto py-12 px-4 space-y-10">
+      <div className="text-center space-y-2">
+        <h1 className="text-4xl font-display font-extrabold gradient-text">Configure Your Study Session</h1>
+        <p className="text-slate-400">Personalize your AI study partner for peak performance</p>
+      </div>
+
+      {/* Presets Row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {presets.map((p) => (
+          <button
+            key={p.name}
+            onClick={() => applyPreset(p.name)}
+            className={`bg-white/5 backdrop-blur-xl border p-4 text-left group transition-all rounded-2xl ${
+              selectedPreset === p.name ? 'border-cyan-500 bg-cyan-500/5' : 'border-white/10 hover:border-white/20'
+            }`}
+          >
+            <div className={`w-8 h-8 rounded-lg mb-3 flex items-center justify-center ${
+              selectedPreset === p.name ? 'bg-cyan-500 text-white' : 'glass text-slate-500 group-hover:text-cyan-400'
+            }`}>
+              {p.icon}
+            </div>
+            <h4 className="text-xs font-bold text-slate-200">{p.name}</h4>
+            <p className="text-[10px] text-slate-500 mt-1">{p.desc}</p>
+          </button>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {/* Left Column: Input Source */}
+        <div className="md:col-span-2 space-y-6">
+          <div className="glass rounded-2xl overflow-hidden">
+            <div className="flex border-b border-white/5">
+              {(['topic', 'text'] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`flex-1 py-4 text-xs font-bold uppercase tracking-widest transition-all ${
+                    activeTab === tab ? 'bg-cyan-500/10 text-cyan-400' : 'text-slate-500 hover:text-slate-300'
+                  }`}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
+
+            <div className="p-6">
+              <AnimatePresence mode="wait">
+                {activeTab === 'topic' && (
+                  <motion.div
+                    key="topic"
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 10 }}
+                    className="space-y-4"
+                  >
+                    <div>
+                      <label className="block text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-2 ml-1">Subject / Topic Name</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Molecular Biology, Quantum Physics"
+                        className="input-field"
+                        value={config.topic}
+                        onChange={(e) => setConfig({ ...config, topic: e.target.value })}
+                      />
+                    </div>
+                  </motion.div>
+                )}
+
+                {activeTab === 'text' && (
+                  <motion.div
+                    key="text"
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 10 }}
+                    className="space-y-4"
+                  >
+                    <textarea
+                      placeholder="Paste your study notes, syllabus, or any text here..."
+                      className="input-field min-h-[220px] resize-none"
+                      value={contextText}
+                      onChange={(e) => setContextText(e.target.value)}
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+
+          <div className="glass-card grid grid-cols-2 gap-6">
+            <div className="space-y-2 col-span-2 sm:col-span-1">
+              <label className="block text-[10px] uppercase tracking-wider text-slate-500 font-bold ml-1">
+                Language
+              </label>
+              <select 
+                className="input-field appearance-none cursor-pointer"
+                value={config.language}
+                onChange={(e) => setConfig({ ...config, language: e.target.value })}
+              >
+                <option value="English">English</option>
+                <option value="Hindi">Hindi</option>
+                <option value="Spanish">Spanish</option>
+                <option value="French">French</option>
+                <option value="German">German</option>
+              </select>
+            </div>
+
+            <div className="space-y-2 col-span-2 sm:col-span-1">
+              <label className="block text-[10px] uppercase tracking-wider text-slate-500 font-bold ml-1">
+                Difficulty Level
+              </label>
+              <select 
+                className="input-field appearance-none cursor-pointer"
+                value={config.difficulty}
+                onChange={(e) => setConfig({ ...config, difficulty: e.target.value })}
+              >
+                <option value="easy">Easy (Fundamentals)</option>
+                <option value="medium">Medium (Standard)</option>
+                <option value="hard">Hard (Advanced)</option>
+                <option value="HOTS">HOTS (Ciritical Thinking)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column: Config Sidebar */}
+        <div className="space-y-6">
+          <div className="glass-card space-y-6">
+            <div className="flex items-center gap-2 font-display font-bold text-lg mb-2">
+              <Settings2 size={20} className="text-cyan-400" />
+              Settings
+            </div>
+
+            {/* Question Count Selection */}
+            <div className="space-y-4">
+              <label className="block text-[10px] uppercase tracking-wider text-slate-500 font-bold ml-1">Number of Questions</label>
+              <div className="flex flex-wrap gap-2">
+                {counts.map((n) => (
+                  <button
+                    key={n}
+                    onClick={() => setConfig({ ...config, count: n, isCustomAmount: false })}
+                    className={`flex-1 min-w-[45px] py-2 text-xs rounded-lg font-bold transition-all border ${
+                      config.count === n && !config.isCustomAmount
+                        ? 'bg-cyan-500 border-cyan-500 text-white shadow-[0_0_15px_rgba(6,182,212,0.3)]'
+                        : 'bg-slate-950 border-white/10 text-slate-400 hover:border-cyan-500/50'
+                    }`}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <label className="flex items-center justify-between text-[10px] uppercase tracking-wider text-slate-500 font-bold ml-1">
+                <span>Time Limit</span>
+                <span className="text-cyan-400 lowercase">{config.timeLimit} mins</span>
+              </label>
+              <input 
+                type="range"
+                min="5"
+                max="120"
+                step="5"
+                className="w-full h-1 bg-slate-800 rounded-full appearance-none cursor-pointer accent-cyan-500"
+                value={config.timeLimit}
+                onChange={(e) => setConfig({ ...config, timeLimit: parseInt(e.target.value) })}
+              />
+            </div>
+
+            <div className="pt-4 mt-4 border-t border-white/5 space-y-4">
+               <button
+                 onClick={handleGenerate}
+                 disabled={loading || uploading}
+                 className="brand-button"
+               >
+                 {loading ? (
+                   <>
+                     <Loader2 size={20} className="animate-spin" />
+                     Generating...
+                   </>
+                 ) : (
+                   <>
+                     <span className="text-lg">⚡</span> Generate AI Quiz
+                   </>
+                 )}
+               </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

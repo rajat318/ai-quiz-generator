@@ -1,0 +1,6 @@
+{
+  "name": "EduQuiz AI",
+  "description": "A professional AI-powered study platform that generates personalized quizzes, flashcards, and study notes from topics, text, or PDFs using Gemini AI.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}

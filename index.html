@@ -1,0 +1,192 @@
+import React, { useMemo } from 'react';
+import { Link } from 'react-router-dom';
+import { motion } from 'motion/react';
+import { 
+  BarChart3, Calendar, Clock, History, Trash2, 
+  ArrowRight, Award, Zap, Brain, TrendingUp,
+  LayoutDashboard, BookOpen
+} from 'lucide-react';
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, 
+  Tooltip, ResponsiveContainer, Cell, LineChart, Line, AreaChart, Area
+} from 'recharts';
+import { useLocalStorage } from '../hooks/useLocalStorage';
+import { QuizSession } from '../types';
+import toast from 'react-hot-toast';
+
+export function Dashboard() {
+  const [sessions, setSessions] = useLocalStorage<QuizSession[]>('edu_quiz_sessions', []);
+
+  const stats = useMemo(() => {
+    if (sessions.length === 0) return null;
+
+    const totalQuizzes = sessions.length;
+    const completedQuizzes = sessions.filter(s => s.endTime).length;
+    const avgScore = sessions.reduce((acc, s) => acc + (s.score || 0), 0) / (completedQuizzes || 1);
+    
+    // Process history for chart
+    const chartData = sessions.slice(0, 7).reverse().map(s => ({
+      name: s.config.topic.substring(0, 10) + '...',
+      score: s.score || 0
+    }));
+
+    return { totalQuizzes, avgScore: Math.round(avgScore), chartData };
+  }, [sessions]);
+
+  const clearHistory = () => {
+    if (window.confirm('Are you sure you want to clear your study history? This cannot be undone.')) {
+      setSessions([]);
+      toast.success('History cleared');
+    }
+  };
+
+  if (sessions.length === 0) {
+    return (
+      <div className="flex-1 max-w-4xl mx-auto w-full flex flex-col items-center justify-center p-4">
+        <div className="glass-card text-center p-12 space-y-6">
+          <div className="w-20 h-20 bg-white/5 rounded-3xl flex items-center justify-center mx-auto mb-6">
+            <LayoutDashboard size={40} className="text-slate-500" />
+          </div>
+          <h2 className="text-3xl font-display font-extrabold">Your Study Vault is Empty</h2>
+          <p className="text-slate-400 max-w-md mx-auto">
+            Generate your first AI quiz to start tracking your performance and mastery levels!
+          </p>
+          <Link to="/generate" className="inline-flex px-8 py-3 bg-cyan-500 rounded-xl font-bold text-white hover:bg-cyan-600 transition-all">
+            Begin First Session
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-6xl mx-auto py-12 px-4 space-y-10">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+           <h1 className="text-4xl font-display font-extrabold flex items-center gap-3">
+             <LayoutDashboard className="text-cyan-400" />
+             Study Dashboard
+           </h1>
+           <p className="text-slate-400 mt-1">Stored locally in your browser for privacy</p>
+        </div>
+        <button 
+          onClick={clearHistory}
+          className="flex items-center gap-2 px-4 py-2 text-sm text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
+        >
+          <Trash2 size={16} />
+          Reset All Analytics
+        </button>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+        <div className="glass-card group overflow-hidden">
+          <div className="absolute top-0 left-0 w-1 h-full bg-cyan-500" />
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-3 bg-cyan-500/10 rounded-xl text-cyan-400">
+              <History size={24} />
+            </div>
+            <TrendingUp size={20} className="text-emerald-500" />
+          </div>
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Total Sessions</p>
+          <h3 className="text-3xl font-bold mt-1 tracking-tight">{stats?.totalQuizzes}</h3>
+        </div>
+
+        <div className="glass-card group overflow-hidden">
+          <div className="absolute top-0 left-0 w-1 h-full bg-amber-500" />
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-3 bg-amber-500/10 rounded-xl text-amber-500">
+              <Award size={24} />
+            </div>
+            <Zap size={20} className="text-amber-500" />
+          </div>
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Average Accuracy</p>
+          <h3 className="text-3xl font-bold mt-1 tracking-tight">{stats?.avgScore}%</h3>
+        </div>
+
+        <div className="glass-card group overflow-hidden">
+          <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500" />
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-3 bg-indigo-500/10 rounded-xl text-indigo-500">
+              <Brain size={24} />
+            </div>
+          </div>
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Mastery Level</p>
+          <h3 className="text-3xl font-bold mt-1 tracking-tight">
+            {stats?.avgScore! >= 80 ? 'Expert' : stats?.avgScore! >= 60 ? 'Intermediate' : 'Learner'}
+          </h3>
+        </div>
+      </div>
+
+      {/* Analysis Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="glass-card p-8">
+           <h4 className="text-lg font-bold mb-6 flex items-center gap-2">
+             <BarChart3 size={20} className="text-cyan-400" />
+             Recent Performance (Last 7 Sessions)
+           </h4>
+           <div className="h-[300px] w-full">
+             <ResponsiveContainer width="100%" height="100%">
+               <BarChart data={stats?.chartData}>
+                 <defs>
+                   <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
+                     <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.8}/>
+                     <stop offset="95%" stopColor="#6366f1" stopOpacity={0.2}/>
+                   </linearGradient>
+                 </defs>
+                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                 <XAxis 
+                   dataKey="name" 
+                   axisLine={false} 
+                   tickLine={false} 
+                   tick={{ fill: '#64748b', fontSize: 10 }}
+                 />
+                 <YAxis 
+                   hide
+                   domain={[0, 100]}
+                 />
+                 <Tooltip 
+                   cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                   contentStyle={{ backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }}
+                 />
+                 <Bar dataKey="score" radius={[8, 8, 0, 0]} fill="url(#colorScore)" />
+               </BarChart>
+             </ResponsiveContainer>
+           </div>
+        </div>
+
+        <div className="glass-card p-8 space-y-6 overflow-hidden">
+          <h4 className="text-lg font-bold flex items-center gap-2">
+            <History size={20} className="text-amber-400" />
+            Study Log
+          </h4>
+          <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+            {sessions.map((session, idx) => (
+              <div 
+                key={session.id}
+                className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-white/10 transition-all group"
+              >
+                <div className="flex items-center gap-4">
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg ${
+                    session.score >= 70 ? 'bg-emerald-500/20 text-emerald-500' : 'bg-red-500/20 text-red-500'
+                  }`}>
+                    {session.score}%
+                  </div>
+                  <div>
+                    <h5 className="font-bold text-slate-200 text-sm">{session.config.topic}</h5>
+                    <p className="text-[10px] text-slate-500 uppercase tracking-widest mt-0.5">
+                      {new Date(session.startTime).toLocaleDateString()} • {session.config.subject}
+                    </p>
+                  </div>
+                </div>
+                <Link to={`/results/${session.id}`} className="p-2 bg-white/5 rounded-lg text-slate-500 group-hover:text-cyan-400 transition-all">
+                  <ArrowRight size={18} />
+                </Link>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

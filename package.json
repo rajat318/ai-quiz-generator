@@ -1,0 +1,125 @@
+import { motion } from 'motion/react';
+import { 
+  Zap, Brain, Sparkles, BarChart3, 
+  Code2, Heart, ShieldCheck, Mail, Github
+} from 'lucide-react';
+
+export function About() {
+  const stats = [
+    { label: 'AI Model', value: 'Gemini 3.1 Pro' },
+    { label: 'Question Types', value: '10+' },
+    { label: 'Response Time', value: '< 2s' },
+  ];
+
+  return (
+    <div className="max-w-4xl mx-auto py-20 px-4 space-y-24">
+      {/* Intro Section */}
+      <section className="text-center space-y-8">
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[10px] font-bold uppercase tracking-widest leading-none">
+          The Mission
+        </div>
+        <h1 className="text-5xl md:text-7xl font-display font-extrabold tracking-tight leading-[0.9]">
+          Democratizing <br />
+          <span className="gradient-text tracking-tighter">Personalized Education</span>
+        </h1>
+        <p className="text-slate-400 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
+          EduQuiz AI turns any piece of information into a dynamic learning experience using cutting-edge Google Gemini technology.
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-10">
+          {stats.map((stat, i) => (
+            <div key={i} className="bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-2xl group hover:border-cyan-500/30 transition-all">
+              <p className="text-3xl font-display font-bold text-white group-hover:text-cyan-400 transition-colors">{stat.value}</p>
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">{stat.label}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Core Values */}
+      <section className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+        <div className="space-y-6">
+          <h2 className="text-3xl font-display font-bold">Why built for students?</h2>
+          <div className="space-y-6">
+            <div className="flex gap-4">
+              <div className="w-12 h-12 rounded-2xl glass flex items-center justify-center shrink-0 text-cyan-400">
+                <Brain size={24} />
+              </div>
+              <div className="space-y-1">
+                <h4 className="font-bold text-white">Active Recall focus</h4>
+                <p className="text-sm text-slate-400">Scientifically proven method for faster learning. Quizzes force your brain to retrieve info.</p>
+              </div>
+            </div>
+            <div className="flex gap-4">
+              <div className="w-12 h-12 rounded-2xl glass flex items-center justify-center shrink-0 text-amber-400">
+                <Zap size={24} />
+              </div>
+              <div className="space-y-1">
+                <h4 className="font-bold text-white">Zero Friction</h4>
+                <p className="text-sm text-slate-400">No account required. Your data stays in your browser. Just open, generate, and learn.</p>
+              </div>
+            </div>
+            <div className="flex gap-4">
+              <div className="w-12 h-12 rounded-2xl glass flex items-center justify-center shrink-0 text-emerald-400">
+                <ShieldCheck size={24} />
+              </div>
+              <div className="space-y-1">
+                <h4 className="font-bold text-white">Privacy First</h4>
+                <p className="text-sm text-slate-400">We don't collect your personal data. All analytics are stored locally on your device.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="relative">
+           <div className="absolute inset-0 bg-indigo-500/20 blur-[100px] -z-10" />
+           <div className="glass-card p-8 border-cyan-500/20 space-y-8">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                   <div className="w-10 h-10 rounded-xl bg-cyan-500 flex items-center justify-center">
+                     <Code2 size={24} className="text-white" />
+                   </div>
+                   <div>
+                     <h4 className="font-bold text-white text-sm">Tech Stack</h4>
+                     <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Built with precision</p>
+                   </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                {['React 19', 'Tailwind v4', 'Express 4', 'Vite 6', 'Gemini Pro SDK', 'Framer Motion'].map((tech) => (
+                  <div key={tech} className="px-4 py-2 rounded-xl bg-white/5 border border-white/5 text-xs text-slate-300 font-medium">
+                    {tech}
+                  </div>
+                ))}
+              </div>
+
+              <div className="pt-6 border-t border-white/5">
+                <p className="text-xs text-slate-500 leading-relaxed italic">
+                  "Our goal is to assist 1 million students globally in mastering their subjects using generative AI technology."
+                </p>
+              </div>
+           </div>
+        </div>
+      </section>
+
+      {/* Footer / Contact */}
+      <section className="glass-card text-center p-12 space-y-8 border-indigo-500/20 bg-indigo-500/5">
+        <h3 className="text-3xl font-display font-bold">Stay Updated</h3>
+        <p className="text-slate-400 max-w-lg mx-auto">
+          We are constantly iterating. Expect new question types, flashcard modes, and collaborative study groups soon.
+        </p>
+        <div className="flex justify-center gap-6">
+           <a href="#" className="p-4 rounded-3xl glass hover:border-cyan-500/50 transition-all text-slate-400 hover:text-cyan-400 flex flex-col items-center gap-2 min-w-[120px]">
+             <Mail size={24} />
+             <span className="text-[10px] font-bold uppercase tracking-widest">Email Support</span>
+           </a>
+           <a href="#" className="p-4 rounded-3xl glass hover:border-indigo-500/50 transition-all text-slate-400 hover:text-indigo-400 flex flex-col items-center gap-2 min-w-[120px]">
+             <Github size={24} />
+             <span className="text-[10px] font-bold uppercase tracking-widest">Github Docs</span>
+           </a>
+        </div>
+      </section>
+    </div>
+  );
+}
